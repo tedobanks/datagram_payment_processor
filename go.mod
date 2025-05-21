@@ -1,6 +1,6 @@
 module github.com/tedobanks/datagram_payment_processor
 
-go 1.24.3
+go 1.24.0
 
 require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
