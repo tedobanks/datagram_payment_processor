@@ -1,0 +1,250 @@
+basePath: /
+definitions:
+  models.DatabytePurchaseRequest:
+    properties:
+      databyte_amount:
+        type: integer
+      user_id:
+        type: string
+    required:
+    - databyte_amount
+    - user_id
+    type: object
+  models.PaystackInitializeRequest:
+    properties:
+      amount:
+        description: Amount in kobo (for datacredit purchase)
+        type: integer
+      email:
+        type: string
+    required:
+    - amount
+    - email
+    type: object
+  models.PaystackWebhookPayload:
+    properties:
+      data: {}
+      event:
+        type: string
+    type: object
+  models.Wallet:
+    properties:
+      created_at:
+        type: string
+      databyte_balance:
+        type: integer
+      datacredit_balance:
+        description: Represents NGN value in kobo
+        type: integer
+      updated_at:
+        type: string
+      user_id:
+        description: (FK to profiles.id or auth.users.id)
+        type: string
+    type: object
+  models.WithdrawalRequest:
+    properties:
+      amount:
+        description: Amount of datacredit (kobo) to withdraw
+        type: integer
+      user_id:
+        type: string
+    required:
+    - amount
+    - user_id
+    type: object
+  utils.ErrorResponse:
+    properties:
+      error:
+        description: The error message string
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@example.com
+    name: API Support
+    url: http://www.example.com/support
+  description: Backend API for handling Paystack payments, user credits, and databyte
+    conversions.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://example.com/terms/
+  title: Datagram Payment Processor API
+  version: "1.0"
+paths:
+  /databytes/purchase:
+    post:
+      consumes:
+      - application/json
+      description: Purchase databytes using the authenticated user's datacredit balance.
+      parameters:
+      - description: Purchase details including databyte_amount
+        in: body
+        name: purchaseRequest
+        required: true
+        schema:
+          $ref: '#/definitions/models.DatabytePurchaseRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Updated wallet information after the purchase
+          schema:
+            $ref: '#/definitions/models.Wallet'
+        "400":
+          description: Invalid input, insufficient datacredits, or positive databyte
+            amount required
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "401":
+          description: User not authenticated or UserID mismatch
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal server error during databyte purchase
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Purchase Databytes
+      tags:
+      - Databytes
+  /payments/initialize:
+    post:
+      consumes:
+      - application/json
+      description: Start a new Paystack payment transaction to purchase datacredits.
+        User must be authenticated.
+      parameters:
+      - description: Payment details including email and amount in kobo
+        in: body
+        name: paymentRequest
+        required: true
+        schema:
+          $ref: '#/definitions/models.PaystackInitializeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Returns message, authorization_url, access_code, and reference
+            from Paystack
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid request payload
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "401":
+          description: User not authenticated
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal server error during payment initialization
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "503":
+          description: 'Service Unavailable: Error from Paystack'
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Initialize Payment for Datacredit
+      tags:
+      - Payments
+  /payments/withdraw:
+    post:
+      consumes:
+      - application/json
+      description: Initiate a withdrawal of datacredit for an authenticated user.
+      parameters:
+      - description: Withdrawal details including amount in kobo
+        in: body
+        name: withdrawalRequest
+        required: true
+        schema:
+          $ref: '#/definitions/models.WithdrawalRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: message, transfer_code
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid input or insufficient datacredit balance
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "401":
+          description: User not authenticated or UserID mismatch
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal server error during withdrawal initiation
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "503":
+          description: 'Service Unavailable: Error from Paystack during withdrawal'
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Initiate Datacredit Withdrawal
+      tags:
+      - Payments
+  /webhooks/paystack:
+    post:
+      consumes:
+      - application/json
+      description: Endpoint for Paystack to send asynchronous payment and transfer
+        notifications. Signature is verified.
+      parameters:
+      - description: Paystack signature for webhook verification
+        in: header
+        name: X-Paystack-Signature
+        required: true
+        type: string
+      - description: Raw Paystack Webhook Event Payload
+        in: body
+        name: webhookEvent
+        required: true
+        schema:
+          $ref: '#/definitions/models.PaystackWebhookPayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'status: ''Webhook processed'''
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid payload or missing signature
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "401":
+          description: Webhook signature verification failed
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal server error processing webhook
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      summary: Handle Paystack Webhook Events
+      tags:
+      - Webhooks
+schemes:
+- http
+- https
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

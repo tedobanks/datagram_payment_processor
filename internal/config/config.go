@@ -22,7 +22,10 @@ func LoadConfig() (*Config, error) {
 	// Load .env file if it exists (good for local development)
 	err := godotenv.Load()
 	if err != nil {
-		log.Println("No .env file found or error loading, relying on environment variables set elsewhere.")
+		// This is not necessarily fatal if env vars are set externally (e.g., in Docker, hosting platform)
+		log.Printf("INFO: No .env file found or error loading .env: %v. Relying on system environment variables.", err)
+	} else {
+		log.Println("--- Successfully called godotenv.Load() ---")
 	}
 
 	cfg := &Config{

@@ -13,12 +13,34 @@ import (
 	"github.com/tedobanks/datagram_payment_processor/internal/services"
 
 	"github.com/gin-gonic/gin"
+	_ "github.com/tedobanks/datagram_payment_processor/docs" 
 	// "net/http" // For http.Server if doing graceful shutdown
 	// "os/signal" // For signal handling
 	// "syscall"   // For signal handling
 	// "time"      // For graceful shutdown timeout
 )
 
+// --- General API Information for Swagger ---
+// @title           Datagram Payment Processor API
+// @version         1.0
+// @description     Backend API for handling Paystack payments, user credits, and databyte conversions.
+// @termsOfService  http://example.com/terms/
+
+// @contact.name   API Support
+// @contact.url    http://www.example.com/support
+// @contact.email  support@example.com
+
+// @license.name  Apache 2.0
+// @license.url   http://www.apache.org/licenses/LICENSE-2.0.html
+
+// @host      localhost:8080
+// @BasePath  /
+// @schemes   http https
+
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description Type "Bearer" followed by a space and JWT token.
 func main() {
 	// 1. Load Application Configuration
 	// This will load from .env file (if present locally) or environment variables.
